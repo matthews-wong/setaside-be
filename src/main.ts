@@ -27,6 +27,10 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // -------------------------
+  // 🔥 FIX SWAGGER FOR VERCEL
+  // -------------------------
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Set Aside API')
     .setDescription('API documentation for the Set Aside order pickup application')
@@ -35,7 +39,27 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, document);
+
+  // Serve the swagger JSON manually (Vercel needs this)
+  app.use('/swagger-json', (req, res) => {
+    res.json(document);
+  });
+
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      url: '/swagger-json', // where UI loads JSON
+    },
+    customCssUrl:
+      'https://unpkg.com/swagger-ui-dist/swagger-ui.css',
+    customJs: [
+      'https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js',
+      'https://unpkg.com/swagger-ui-dist/swagger-ui-standalone-preset.js',
+    ],
+  });
+
+  // -------------------------
+  // END SWAGGER FIX
+  // -------------------------
 
   await app.listen(process.env.PORT ?? 3000);
 }
