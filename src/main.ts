@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import serverlessExpress from '@vendia/serverless-express';
 
-let cachedServer;
+let cachedServer: any;
 
 async function bootstrapServer() {
   if (!cachedServer) {
@@ -61,7 +61,8 @@ async function bootstrapServer() {
     const document = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup('docs', app, document);
 
-    await app.init(); // IMPORTANT for serverless
+    // REQUIRED for serverless adapters
+    await app.init();
 
     const expressApp = app.getHttpAdapter().getInstance();
     cachedServer = serverlessExpress({ app: expressApp });
@@ -70,7 +71,7 @@ async function bootstrapServer() {
   return cachedServer;
 }
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   const server = await bootstrapServer();
   return server(req, res);
 }
