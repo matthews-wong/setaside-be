@@ -1,0 +1,649 @@
+{
+  "info": {
+    "_postman_id": "set-aside-api-collection",
+    "name": "Set Aside API",
+    "description": "API collection for the Set Aside order pickup application.\n\n## Authentication\nMost endpoints require JWT authentication. Use the `/auth/login` endpoint to get a token, then add it to the Authorization header as `Bearer <token>`.\n\n## Roles\n- **customer**: Can create orders, view own orders, manage own order items\n- **cashier**: Can manage products, view all orders, update order status\n- **admin**: Full access to all resources\n\n## Order Status Flow\npending → preparing → ready → picked_up",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"customer@example.com\",\n    \"password\": \"Customer123!\",\n    \"full_name\": \"John Customer\",\n    \"phone\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user. All new registrations are assigned the 'customer' role."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"customer@example.com\",\n    \"password\": \"Customer123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with email and password to get JWT token."
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get the current authenticated user's profile."
+          }
+        }
+      ],
+      "description": "Authentication endpoints for user registration and login."
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Get the current user's profile."
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"John Updated\",\n    \"phone\": \"+0987654321\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Update the current user's profile."
+          }
+        },
+        {
+          "name": "List All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "role",
+                  "value": "customer",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "john",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List all users. Admin only."
+          }
+        }
+      ],
+      "description": "User management endpoints."
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "category",
+                  "value": "Beverages",
+                  "disabled": true
+                },
+                {
+                  "key": "is_available",
+                  "value": "true",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "coffee",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all products. Public endpoint."
+          }
+        },
+        {
+          "name": "Get Product Categories",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "categories"]
+            },
+            "description": "Get all product categories. Public endpoint."
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "product-uuid-here"
+                }
+              ]
+            },
+            "description": "Get a specific product by ID. Public endpoint."
+          }
+        },
+        {
+          "name": "Create Product (Staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Cappuccino\",\n    \"description\": \"A classic Italian coffee drink\",\n    \"price\": 4.99,\n    \"category\": \"Beverages\",\n    \"is_available\": true,\n    \"stock_quantity\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Create a new product. Cashier/Admin only."
+          }
+        },
+        {
+          "name": "Update Product (Staff)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"price\": 5.49,\n    \"is_available\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "product-uuid-here"
+                }
+              ]
+            },
+            "description": "Update a product. Cashier/Admin only."
+          }
+        },
+        {
+          "name": "Delete Product (Staff)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "product-uuid-here"
+                }
+              ]
+            },
+            "description": "Delete a product. Cashier/Admin only."
+          }
+        },
+        {
+          "name": "Upload Product Image (Staff)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/:id/image",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id", "image"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "product-uuid-here"
+                }
+              ]
+            },
+            "description": "Upload an image for a product. Cashier/Admin only."
+          }
+        }
+      ],
+      "description": "Product management endpoints."
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"notes\": \"Please prepare quickly\",\n    \"pickup_time\": \"2024-01-15T14:30:00Z\",\n    \"items\": [\n        {\n            \"product_id\": \"product-uuid-here\",\n            \"quantity\": 2,\n            \"special_instructions\": \"No sugar\"\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"]
+            },
+            "description": "Create a new order. Optionally include items."
+          }
+        },
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                },
+                {
+                  "key": "customer_id",
+                  "value": "customer-uuid-here",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List orders. Customers see their own orders, staff see all."
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "order-uuid-here"
+                }
+              ]
+            },
+            "description": "Get order details with items."
+          }
+        },
+        {
+          "name": "Update Order",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"notes\": \"Updated notes\",\n    \"pickup_time\": \"2024-01-15T15:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "order-uuid-here"
+                }
+              ]
+            },
+            "description": "Update order notes or pickup time. Only for pending orders."
+          }
+        },
+        {
+          "name": "Update Order Status (Staff)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"preparing\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "order-uuid-here"
+                }
+              ]
+            },
+            "description": "Update order status. Staff only. Valid transitions: pending → preparing → ready → picked_up"
+          }
+        },
+        {
+          "name": "Delete Order",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "order-uuid-here"
+                }
+              ]
+            },
+            "description": "Delete an order. Only pending orders can be deleted."
+          }
+        }
+      ],
+      "description": "Order management endpoints."
+    },
+    {
+      "name": "Order Items",
+      "item": [
+        {
+          "name": "Get Order Items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:orderId/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":orderId", "items"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order-uuid-here"
+                }
+              ]
+            },
+            "description": "Get all items in an order."
+          }
+        },
+        {
+          "name": "Add Item to Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"product_id\": \"product-uuid-here\",\n    \"quantity\": 1,\n    \"special_instructions\": \"Extra hot\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/:orderId/items",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":orderId", "items"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order-uuid-here"
+                }
+              ]
+            },
+            "description": "Add an item to an order. Only for pending orders."
+          }
+        },
+        {
+          "name": "Update Order Item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"quantity\": 3,\n    \"special_instructions\": \"No ice\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/:orderId/items/:itemId",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":orderId", "items", ":itemId"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order-uuid-here"
+                },
+                {
+                  "key": "itemId",
+                  "value": "item-uuid-here"
+                }
+              ]
+            },
+            "description": "Update an order item. Only for pending orders."
+          }
+        },
+        {
+          "name": "Remove Item from Order",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:orderId/items/:itemId",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":orderId", "items", ":itemId"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order-uuid-here"
+                },
+                {
+                  "key": "itemId",
+                  "value": "item-uuid-here"
+                }
+              ]
+            },
+            "description": "Remove an item from an order. Only for pending orders."
+          }
+        }
+      ],
+      "description": "Order item management endpoints."
+    }
+  ]
+}
