@@ -77,9 +77,11 @@ export class OrderItemsService {
     if (existingItem) {
       // Update quantity instead of creating new item
       const newQuantity = existingItem.quantity + createDto.quantity;
+      const newSubtotal = newQuantity * existingItem.unit_price;
       
       const updatedItem = await this.orderItemsRepository.update(existingItem.id, {
         quantity: newQuantity,
+        subtotal: newSubtotal,
         special_instructions: createDto.special_instructions || existingItem.special_instructions,
       });
 
@@ -133,7 +135,13 @@ export class OrderItemsService {
       }
     }
 
-    const updatedItem = await this.orderItemsRepository.update(itemId, updateDto);
+    // Prepare update data with subtotal if quantity is changing
+    const updateData: any = { ...updateDto };
+    if (updateDto.quantity) {
+      updateData.subtotal = updateDto.quantity * orderItem.unit_price;
+    }
+
+    const updatedItem = await this.orderItemsRepository.update(itemId, updateData);
     this.logger.log(`Order item updated: ${itemId}`);
 
     return this.orderItemsRepository.findByIdWithProduct(updatedItem.id) as Promise<OrderItemWithProduct>;

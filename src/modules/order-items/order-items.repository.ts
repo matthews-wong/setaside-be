@@ -90,9 +90,15 @@ export class OrderItemsRepository {
     unit_price: number;
     special_instructions?: string;
   }): Promise<OrderItem> {
+    // Calculate subtotal (required by database)
+    const dataWithSubtotal = {
+      ...itemData,
+      subtotal: itemData.quantity * itemData.unit_price,
+    };
+
     const { data, error } = await this.supabase
       .from(this.tableName)
-      .insert(itemData)
+      .insert(dataWithSubtotal)
       .select()
       .single();
 
@@ -109,7 +115,7 @@ export class OrderItemsRepository {
    */
   async update(
     id: string,
-    updateData: Partial<Pick<OrderItem, 'quantity' | 'special_instructions'>>,
+    updateData: Partial<Pick<OrderItem, 'quantity' | 'special_instructions' | 'subtotal'>>,
   ): Promise<OrderItem> {
     const { data, error } = await this.supabase
       .from(this.tableName)
