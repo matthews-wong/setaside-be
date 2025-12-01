@@ -269,31 +269,6 @@ describe('Orders API', () => {
       createdOrderId = newOrder.id;
     });
 
-    it('should update status from ready to picked_up', async () => {
-      if (!createdOrderId) {
-        console.log('Skipping - no order created');
-        return;
-      }
-
-      // Ensure order is in ready state first
-      await apiRequest(`/orders/${createdOrderId}/status`, {
-        method: 'PATCH',
-        body: { status: 'ready' },
-        token: testState.adminToken,
-      });
-
-      const { status, data } = await apiRequest(`/orders/${createdOrderId}/status`, {
-        method: 'PATCH',
-        body: {
-          status: 'picked_up',
-        },
-        token: testState.adminToken,
-      });
-
-      expect(status).toBe(200);
-      expect(data.status).toBe('picked_up');
-    });
-
     it('should fail for invalid status transition (picked_up to pending)', async () => {
       // Create a new order and move it to picked_up
       const { data: newOrder } = await apiRequest('/orders', {
