@@ -17,7 +17,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:auth": "jest --config ./test/jest-e2e.json --testPathPattern=auth.e2e-spec.ts",
+    "test:e2e:products": "jest --config ./test/jest-e2e.json --testPathPattern=products.e2e-spec.ts",
+    "test:e2e:orders": "jest --config ./test/jest-e2e.json --testPathPattern=orders.e2e-spec.ts",
+    "test:e2e:order-items": "jest --config ./test/jest-e2e.json --testPathPattern=order-items.e2e-spec.ts",
+    "test:e2e:users": "jest --config ./test/jest-e2e.json --testPathPattern=users.e2e-spec.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

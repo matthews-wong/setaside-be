@@ -1,0 +1,156 @@
+name: API Tests CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  # Allow manual trigger
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  BASE_URL: 'https://setaside.matthewswong.tech/api/v1'
+
+jobs:
+  # Run all tests
+  test:
+    name: Run E2E API Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run all E2E tests
+        run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            coverage/
+            test-results/
+          retention-days: 30
+
+  # Individual test suites for granular control
+  test-auth:
+    name: Auth API Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run Auth Tests
+        run: npm run test:e2e -- --testPathPattern=auth.e2e-spec.ts
+
+  test-products:
+    name: Products API Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run Products Tests
+        run: npm run test:e2e -- --testPathPattern=products.e2e-spec.ts
+
+  test-orders:
+    name: Orders API Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run Orders Tests
+        run: npm run test:e2e -- --testPathPattern=orders.e2e-spec.ts
+
+  test-order-items:
+    name: Order Items API Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run Order Items Tests
+        run: npm run test:e2e -- --testPathPattern=order-items.e2e-spec.ts
+
+  test-users:
+    name: Users API Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Run Users Tests
+        run: npm run test:e2e -- --testPathPattern=users.e2e-spec.ts
+
+  # Build check
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Lint
+        run: npm run lint
+
+  # Summary job that depends on all tests
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-auth, test-products, test-orders, test-order-items, test-users, build]
+    if: always()
+    
+    steps:
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test-auth.result }}" == "failure" ] || \
+             [ "${{ needs.test-products.result }}" == "failure" ] || \
+             [ "${{ needs.test-orders.result }}" == "failure" ] || \
+             [ "${{ needs.test-order-items.result }}" == "failure" ] || \
+             [ "${{ needs.test-users.result }}" == "failure" ] || \
+             [ "${{ needs.build.result }}" == "failure" ]; then
+            echo "One or more tests failed"
+            exit 1
+          fi
+          echo "All tests passed!"
