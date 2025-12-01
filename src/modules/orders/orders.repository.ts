@@ -137,6 +137,8 @@ export class OrdersRepository {
       updateData.prepared_by = preparedBy;
     }
 
+    this.logger.log(`Updating order ${id} status to: ${status}`);
+
     const { data, error } = await this.supabase
       .from(this.tableName)
       .update(updateData)
@@ -145,8 +147,8 @@ export class OrdersRepository {
       .single();
 
     if (error) {
-      this.logger.error(`Error updating order status: ${error.message}`);
-      throw error;
+      this.logger.error(`Error updating order status: ${error.message}`, error);
+      throw new Error(`Failed to update order status: ${error.message}`);
     }
 
     return data as Order;
