@@ -177,7 +177,10 @@ export class OrdersRepository {
         `
         *,
         customer:users!customer_id(id, email, full_name, phone),
-        items:order_items(count)
+        items:order_items(
+          *,
+          product:products(id, name, price, image_url)
+        )
       `,
         { count: 'exact' },
       );
