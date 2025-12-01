@@ -46,8 +46,16 @@ export class OrdersRepository {
         *,
         customer:users!customer_id(id, email, full_name, phone, role),
         items:order_items(
-          *,
-          product:products(*)
+          id,
+          order_id,
+          product_id,
+          quantity,
+          unit_price,
+          subtotal,
+          special_instructions,
+          created_at,
+          updated_at,
+          product:products!product_id(id, name, description, price, image_url, category)
         ),
         preparer:users!prepared_by(id, email, full_name)
       `)
@@ -178,8 +186,16 @@ export class OrdersRepository {
         *,
         customer:users!customer_id(id, email, full_name, phone),
         items:order_items(
-          *,
-          product:products(id, name, price, image_url)
+          id,
+          order_id,
+          product_id,
+          quantity,
+          unit_price,
+          subtotal,
+          special_instructions,
+          created_at,
+          updated_at,
+          product:products!product_id(id, name, price, image_url, category)
         )
       `,
         { count: 'exact' },
@@ -230,8 +246,16 @@ export class OrdersRepository {
         `
         *,
         items:order_items(
-          *,
-          product:products(id, name, price, image_url)
+          id,
+          order_id,
+          product_id,
+          quantity,
+          unit_price,
+          subtotal,
+          special_instructions,
+          created_at,
+          updated_at,
+          product:products!product_id(id, name, price, image_url, category)
         )
       `,
         { count: 'exact' },

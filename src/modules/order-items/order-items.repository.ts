@@ -43,7 +43,7 @@ export class OrderItemsRepository {
       .from(this.tableName)
       .select(`
         *,
-        product:products(*)
+        product:products!product_id(id, name, description, price, image_url, category, is_available, stock_quantity)
       `)
       .eq('id', id)
       .single();
@@ -67,7 +67,7 @@ export class OrderItemsRepository {
       .from(this.tableName)
       .select(`
         *,
-        product:products(*)
+        product:products!product_id(id, name, description, price, image_url, category, is_available, stock_quantity)
       `)
       .eq('order_id', orderId)
       .order('created_at', { ascending: true });
