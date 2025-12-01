@@ -48,9 +48,12 @@ export class OrderItemsService {
     orderId: string,
     createDto: CreateOrderItemDto,
     user: AuthenticatedUser,
+    skipValidation: boolean = false,
   ): Promise<OrderItemWithProduct> {
-    // Validate order access and ensure it's pending
-    await this.ordersService.validateOrderAccess(orderId, user, true);
+    // Validate order access and ensure it's pending (skip when called from order creation)
+    if (!skipValidation) {
+      await this.ordersService.validateOrderAccess(orderId, user, true);
+    }
 
     // Get product to verify it exists and get price
     const product = await this.productsService.findById(createDto.product_id);
@@ -59,7 +62,9 @@ export class OrderItemsService {
       throw new BadRequestException('Product is not available');
     }
 
-    if (product.stock_quantity < createDto.quantity) {
+    // Check stock (handle null stock_quantity as unlimited)
+    const stockQuantity = product.stock_quantity ?? Infinity;
+    if (stockQuantity < createDto.quantity) {
       throw new BadRequestException('Insufficient stock');
     }
 

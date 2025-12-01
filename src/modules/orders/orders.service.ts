@@ -46,10 +46,15 @@ export class OrdersService {
 
     this.logger.log(`Order created: ${order.id} by user ${user.id}`);
 
-    // Add items if provided
+    // Add items if provided (skip validation since we just created this order)
     if (createDto.items && createDto.items.length > 0) {
       for (const item of createDto.items) {
-        await this.orderItemsService.create(order.id, item, user);
+        try {
+          await this.orderItemsService.create(order.id, item, user, true);
+        } catch (error) {
+          this.logger.error(`Failed to add item to order ${order.id}: ${error.message}`);
+          // Continue with other items even if one fails
+        }
       }
     }
 
