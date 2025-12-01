@@ -8,8 +8,9 @@ export enum UserRole {
 }
 
 /**
- * Order status values following the defined flow:
- * pending → preparing → ready → picked_up
+ * Order status values following the simplified flow:
+ * pending → ready (2-stage flow)
+ * Also supports: pending → preparing → ready → picked_up (legacy 4-stage flow)
  */
 export enum OrderStatus {
   PENDING = 'pending',
@@ -20,9 +21,10 @@ export enum OrderStatus {
 
 /**
  * Valid status transitions
+ * Supports both simplified (pending → ready) and full flow
  */
 export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  [OrderStatus.PENDING]: [OrderStatus.PREPARING],
+  [OrderStatus.PENDING]: [OrderStatus.PREPARING, OrderStatus.READY],
   [OrderStatus.PREPARING]: [OrderStatus.READY],
   [OrderStatus.READY]: [OrderStatus.PICKED_UP],
   [OrderStatus.PICKED_UP]: [],
