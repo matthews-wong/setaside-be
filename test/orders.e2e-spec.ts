@@ -26,11 +26,19 @@ describe('Orders API', () => {
       testState.adminToken = data.access_token;
     }
 
-    // Get a product ID
+    // Get an available product ID with stock
     if (!testState.testProductId) {
-      const { data } = await apiRequest('/products?limit=1');
+      const { data } = await apiRequest('/products?is_available=true&limit=10');
       if (data.data && data.data.length > 0) {
-        testState.testProductId = data.data[0].id;
+        // Find a product that is available and has stock
+        const availableProduct = data.data.find(
+          (p: any) => p.is_available && (p.stock_quantity === null || p.stock_quantity > 0)
+        );
+        if (availableProduct) {
+          testState.testProductId = availableProduct.id;
+        } else {
+          testState.testProductId = data.data[0].id;
+        }
       }
     }
   });
