@@ -241,7 +241,7 @@ describe('Orders API', () => {
   });
 
   describe('PATCH /orders/:id/status', () => {
-    it('should update status from pending to ready (simplified flow)', async () => {
+    it('should update status from pending to preparing', async () => {
       if (!createdOrderId) {
         console.log('Skipping - no order created');
         return;
@@ -257,27 +257,80 @@ describe('Orders API', () => {
       const { status, data } = await apiRequest(`/orders/${newOrder.id}/status`, {
         method: 'PATCH',
         body: {
-          status: 'ready',
+          status: 'preparing',
         },
         token: testState.adminToken,
       });
 
       expect(status).toBe(200);
-      expect(data.status).toBe('ready');
+      expect(data.status).toBe('preparing');
       
       // Save for next test
       createdOrderId = newOrder.id;
     });
 
-    it('should fail for invalid status transition (picked_up to pending)', async () => {
-      // Create a new order and move it to picked_up
+    it('should follow full status flow: pending → preparing → ready → pickedup → completed', async () => {
+      // Create a new order
+      const { data: newOrder } = await apiRequest('/orders', {
+        method: 'POST',
+        body: { notes: 'Full flow test order' },
+        token: testState.adminToken,
+      });
+
+      expect(newOrder.status).toBe('pending');
+
+      // pending → preparing
+      const { status: status1, data: data1 } = await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'preparing' },
+        token: testState.adminToken,
+      });
+      expect(status1).toBe(200);
+      expect(data1.status).toBe('preparing');
+
+      // preparing → ready
+      const { status: status2, data: data2 } = await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'ready' },
+        token: testState.adminToken,
+      });
+      expect(status2).toBe(200);
+      expect(data2.status).toBe('ready');
+
+      // ready → pickedup
+      const { status: status3, data: data3 } = await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'pickedup' },
+        token: testState.adminToken,
+      });
+      expect(status3).toBe(200);
+      expect(data3.status).toBe('pickedup');
+
+      // pickedup → completed
+      const { status: status4, data: data4 } = await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'completed' },
+        token: testState.adminToken,
+      });
+      expect(status4).toBe(200);
+      expect(data4.status).toBe('completed');
+    });
+
+    it('should fail for invalid status transition (completed to pending)', async () => {
+      // Create a new order and move it to completed
       const { data: newOrder } = await apiRequest('/orders', {
         method: 'POST',
         body: { notes: 'Invalid transition test' },
         token: testState.adminToken,
       });
 
-      // Move to ready then picked_up
+      // Move through the full flow to completed
+      await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'preparing' },
+        token: testState.adminToken,
+      });
+      
       await apiRequest(`/orders/${newOrder.id}/status`, {
         method: 'PATCH',
         body: { status: 'ready' },
@@ -286,16 +339,41 @@ describe('Orders API', () => {
       
       await apiRequest(`/orders/${newOrder.id}/status`, {
         method: 'PATCH',
-        body: { status: 'picked_up' },
+        body: { status: 'pickedup' },
+        token: testState.adminToken,
+      });
+      
+      await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'completed' },
         token: testState.adminToken,
       });
 
-      // Try invalid transition: picked_up -> pending
+      // Try invalid transition: completed -> pending
       const { status, data } = await apiRequest(`/orders/${newOrder.id}/status`, {
         method: 'PATCH',
         body: {
           status: 'pending',
         },
+        token: testState.adminToken,
+      });
+
+      expect(status).toBe(400);
+      expect(data.message).toContain('Invalid status transition');
+    });
+
+    it('should fail for skipping status (pending to ready)', async () => {
+      // Create a new order
+      const { data: newOrder } = await apiRequest('/orders', {
+        method: 'POST',
+        body: { notes: 'Skip status test' },
+        token: testState.adminToken,
+      });
+
+      // Try to skip preparing and go directly to ready
+      const { status, data } = await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'ready' },
         token: testState.adminToken,
       });
 
@@ -321,8 +399,8 @@ describe('Orders API', () => {
       expect(status).toBe(204);
     });
 
-    it('should fail to delete non-pending order', async () => {
-      // Create and prepare an order
+    it('should fail to delete preparing order', async () => {
+      // Create and move order to preparing status
       const { data: newOrder } = await apiRequest('/orders', {
         method: 'POST',
         body: { notes: 'Order to prepare' },
@@ -332,6 +410,47 @@ describe('Orders API', () => {
       await apiRequest(`/orders/${newOrder.id}/status`, {
         method: 'PATCH',
         body: { status: 'preparing' },
+        token: testState.adminToken,
+      });
+
+      const { status, data } = await apiRequest(`/orders/${newOrder.id}`, {
+        method: 'DELETE',
+        token: testState.adminToken,
+      });
+
+      expect(status).toBe(400);
+      expect(data.message).toContain('pending');
+    });
+
+    it('should fail to delete completed order', async () => {
+      // Create and move order through full flow to completed
+      const { data: newOrder } = await apiRequest('/orders', {
+        method: 'POST',
+        body: { notes: 'Order to complete' },
+        token: testState.adminToken,
+      });
+
+      await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'preparing' },
+        token: testState.adminToken,
+      });
+
+      await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'ready' },
+        token: testState.adminToken,
+      });
+
+      await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'pickedup' },
+        token: testState.adminToken,
+      });
+
+      await apiRequest(`/orders/${newOrder.id}/status`, {
+        method: 'PATCH',
+        body: { status: 'completed' },
         token: testState.adminToken,
       });
 
