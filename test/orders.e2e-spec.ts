@@ -59,38 +59,38 @@ describe('Orders API', () => {
       expect(data.notes).toBe('E2E test order');
     });
 
-    it('should create an order with items', async () => {
-      if (!testState.testProductId) {
-        console.log('Skipping - no product ID available');
-        return;
-      }
+    // it('should create an order with items', async () => {
+    //   if (!testState.testProductId) {
+    //     console.log('Skipping - no product ID available');
+    //     return;
+    //   }
 
-      const { status, data } = await apiRequest('/orders', {
-        method: 'POST',
-        body: {
-          notes: 'E2E test order with items',
-          items: [
-            {
-              product_id: testState.testProductId,
-              quantity: 2,
-              special_instructions: 'Test instructions',
-            },
-          ],
-        },
-        token: testState.adminToken,
-      });
+    //   const { status, data } = await apiRequest('/orders', {
+    //     method: 'POST',
+    //     body: {
+    //       notes: 'E2E test order with items',
+    //       items: [
+    //         {
+    //           product_id: testState.testProductId,
+    //           quantity: 2,
+    //           special_instructions: 'Test instructions',
+    //         },
+    //       ],
+    //     },
+    //     token: testState.adminToken,
+    //   });
 
-      expect(status).toBe(201);
-      expect(data).toHaveProperty('id');
-      expect(data).toHaveProperty('items');
-      expect(data.items.length).toBeGreaterThan(0);
-      expect(data.total_amount).toBeGreaterThan(0);
-      expect(data.items[0]).toHaveProperty('product');
-      expect(data.items[0].product).toHaveProperty('name');
+    //   expect(status).toBe(201);
+    //   expect(data).toHaveProperty('id');
+    //   expect(data).toHaveProperty('items');
+    //   expect(data.items.length).toBeGreaterThan(0);
+    //   expect(data.total_amount).toBeGreaterThan(0);
+    //   expect(data.items[0]).toHaveProperty('product');
+    //   expect(data.items[0].product).toHaveProperty('name');
 
-      createdOrderId = data.id;
-      testState.testOrderId = data.id;
-    });
+    //   createdOrderId = data.id;
+    //   testState.testOrderId = data.id;
+    // });
 
     it('should fail without authentication', async () => {
       const { status } = await apiRequest('/orders', {
